@@ -55,7 +55,9 @@ use managed_agents::{
 #[cfg(not(feature = "mesh-llm"))]
 use mesh_llm_stubs::*;
 #[cfg(all(feature = "mesh-llm", target_os = "macos"))]
-use shutdown::{hard_exit_after_mesh_shutdown, relaunch_after_mesh_shutdown};
+use shutdown::hard_exit_after_mesh_shutdown;
+#[cfg(feature = "mesh-llm")]
+use shutdown::relaunch_after_mesh_shutdown;
 use shutdown::{is_restart_request, shut_down_app};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -918,7 +920,7 @@ pub fn run() {
             shut_down_app(app_handle, &run_shutdown_done);
             app_handle.state::<ClipboardState>().release();
 
-            #[cfg(all(feature = "mesh-llm", target_os = "macos"))]
+            #[cfg(feature = "mesh-llm")]
             if restart_requested.load(Ordering::SeqCst) {
                 relaunch_after_mesh_shutdown(app_handle);
             }
