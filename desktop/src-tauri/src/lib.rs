@@ -139,9 +139,16 @@ async fn wait_for_stable_initial_window_geometry<R: tauri::Runtime>(window: &tau
 pub fn run() {
     // mesh-llm's async chains (model download, node start/join) overflow
     // tokio's default 2 MiB worker stacks — a stack-guard SIGABRT, not a
-    // panic. Upstream mesh-llm and mesh-console both run on 8 MiB worker
-    // stacks for this reason; give Tauri's command runtime the same headroom
-    // before anything else touches tauri::async_runtime.
+    // panic. Upstream mesh-llm and mesh-console both run on larger worker
+    // stacks for this reason; give Tauri's command runtime and mesh-llm's
+    // embedded runtime the same headroom before either starts.
+    #[cfg(feature = "mesh-llm")]
+    if std::env::var_os("MESH_TOKIO_STACK_SIZE").is_none() {
+        std::env::set_var(
+            "MESH_TOKIO_STACK_SIZE",
+            crate::mesh_llm::MESH_WORKER_STACK_SIZE.to_string(),
+        );
+    }
     #[cfg(feature = "mesh-llm")]
     match tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -799,6 +806,9 @@ pub fn run() {
             put_agent_session_config,
             get_global_agent_config,
             set_global_agent_config,
+            mesh_debug_log,
+            mesh_debug_logging_enabled,
+            set_mesh_debug_logging_enabled,
             mesh_start_node,
             mesh_stop_node,
             mesh_node_status,
